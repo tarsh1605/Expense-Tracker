@@ -12,8 +12,9 @@ export const AuthProvider = ({ children }) => {
         email,
         password,
       });
-      const { accessToken } = respone.data;
+      const { accessToken, refreshToken } = respone.data;
       localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
       setUser(jwtDecode(accessToken));
       return { success: true, message: "Success" };
     } catch (err) {
@@ -34,6 +35,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
   };
   const getAccessToken = () => {
     return localStorage.getItem("accessToken");

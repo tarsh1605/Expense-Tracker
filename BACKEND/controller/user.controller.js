@@ -1,6 +1,13 @@
 const User=require('../models/user')
 const jwt=require('jsonwebtoken')
 const bcrypt=require('bcrypt')
+const generateAccessToken=(user)=>{
+  return jwt.sign({id:user._id,},process.env.ACCESS_TOKEN_SECRET,{expiresIn:'20m'})
+}
+const generateRefreshToken=(user)=>{
+  return jwt.sign({id:user._id,},process.env.REFRESH_TOKEN_SECRET,{expiresIn:'7d'})
+
+}
 const userSignIn=async(req,res)=>{
     const{username,password,email}=req.body;
     if(!username){
@@ -43,9 +50,8 @@ const userLogin=async(req,res)=>{
     if(!check){
       return res.status(400).json({message:"Wrong Password",success:false})
     }
-    const accessToken=jwt.sign({id:user._id,},process.env.ACCESS_TOKEN_SECRET);
-    const refreshToken = jwt.sign({ id: user._id }, process.env.REFRESH_TOKEN_SECRET);
-    // const accessToken = jwt.sign({ id: user._id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
+    const accessToken=generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
     const  userWithToken= await User.findByIdAndUpdate(user._id,{refreshToken}).select("-password")
     const options = {
       httpOnly: true,
@@ -78,6 +84,25 @@ const userLogout=async(req,res)=>{
   }
   return res.status(200).clearCookie("accessToken",options).clearCookie("refreshToken",options).json({message:"user logout successfully",success:true})
 }
+const tokenRefresh = async (req, res) => {
+  const { refreshToken } = req.body;
 
+  if (!refreshToken) {
+    return res.status(401).json({ message: "Refresh token is missing" });
+  }
 
-module.exports={userSignIn,userLogin,userLogout}
+  try {
+    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
+      if (err) {
+        return res.status(401).json({ message: "Refresh token is invalid or expired" });
+      }
+      const accessToken = generateAccessToken(user);
+      // console.log("New access token issued:", accessToken);
+      return res.json({ accessToken });
+    });
+  } catch (err) {
+    console.error("Error during token refresh:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+module.exports={userSignIn,userLogin,userLogout,tokenRefresh}

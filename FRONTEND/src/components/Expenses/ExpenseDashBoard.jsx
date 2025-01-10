@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
 import { AuthContext } from "../../context/AuthContext.jsx";
 import { useNavigate } from "react-router-dom";
-
+import axiosInstance from "../../Axios/axiosInstance.jsx";
 const ExpenseList = () => {
   const navigate = useNavigate();
   const { logout } = useContext(AuthContext);
@@ -22,27 +22,19 @@ const ExpenseList = () => {
   const { getAccessToken } = useContext(AuthContext);
 
   const fetchExpenseList = async () => {
-    const response = await axios.get("http://localhost:5000/expenses", {
-      headers: { Authorization: `Bearer ${getAccessToken()}` },
-    });
+    const response = await axiosInstance.get("/expenses");
     setExpenseList(response.data);
   };
 
   const handleAddExpense = async (e) => {
     e.preventDefault();
-    const response = await axios.post(
-      "http://localhost:5000/expenses",
-      { ...newExpense },
-      { headers: { Authorization: `Bearer ${getAccessToken()}` } }
-    );
+    const response = await axiosInstance.post("/expenses", { ...newExpense });
     setExpenseList([...expenseList, response.data]);
     setNewExpense({ title: "", category: "", amount: "", date: "" });
   };
 
   const handleDeleteExpense = async (id) => {
-    await axios.delete(`http://localhost:5000/expenses/${id}`, {
-      headers: { Authorization: `Bearer ${getAccessToken()}` },
-    });
+    await axiosInstance.delete(`expenses/${id}`);
     const newexpenseList = expenseList.filter((expense) => expense._id !== id);
     setExpenseList(newexpenseList);
   };
@@ -190,9 +182,9 @@ const ExpenseList = () => {
 
         <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-200 mb-8">
           <ul className="space-y-3">
-            {filteredExpenseList.map((expense) => (
+            {filteredExpenseList.map((expense, i) => (
               <li
-                key={expense._id}
+                key={i}
                 className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
               >
                 <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
